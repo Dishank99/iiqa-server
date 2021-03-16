@@ -23,6 +23,7 @@
   "homepage": "https://github.com/Dishank99/iiqa-server#readme",
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "firebase": "^8.3.0"
   }
 }
