@@ -2,25 +2,30 @@ const express = require('express')
 const router = express.Router()
 
 const ClassroomController = require('../controllers/classroom')
+const { getProfileDataFromDocId } = require('../controllers/user')
 const apiResponse = require('../helpers/apiResponse')
 
 router.get('/', async (req, res) => {
-    // TODO: add condition for getting classroom data
-    const { studentDocId, teacherDocId } = req.query
+    const { studentDocId, teacherDocId, classroomDocId } = req.query
     
     try {
         let response = null
-        if(studentDocId && !teacherDocId) {
+        if(studentDocId && !(teacherDocId && classroomDocId)) {
             response = await ClassroomController.getClassroomsForStudent(studentDocId)
-        } else if (teacherDocId && !studentDocId) {
+        } else if (teacherDocId && !(studentDocId && classroomDocId)) {
             response = await ClassroomController.getClassroomsForTeacher(teacherDocId)
+        } else if (classroomDocId && !(teacherDocId && studentDocId)) {
+            const classroomData = await ClassroomController.getClassroomData(classroomDocId)
+            const { studentIds, ...restOfData } = classroomData
+            const studentDataList = await Promise.all(studentIds.map(studentDocId => getProfileDataFromDocId(studentDocId)))
+            response = { ...restOfData, studentDataList  }
         } else {
-            return apiResponse.incompleteRequestBodyResponse(res, 'Provide either studentDocId or teacherDocId')
+            return apiResponse.incompleteRequestBodyResponse(res, 'Provide either studentDocId or teacherDocId or classroomDocId')
         }
 
         return apiResponse.successResponse(res, response)
     } catch (err) {
-        return apiResponse.internalServerError(res, err.message)
+        return err.message === 'notfound'? apiResponse.notFoundErrorResponse(res,'Classroom for given classroomDocId doesnot exists') : apiResponse.internalServerError(res, err.message)
     }
 })
 

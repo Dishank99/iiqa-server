@@ -1,6 +1,8 @@
 const Classroom  = require('../models/classroom')
 
-exports.getClassroomsForStudent = async function (userId){
+const { getProfileDataFromDocId } = require('./user')
+
+const getClassroomsForStudent = async function (userId){
     /**
      * @param userId ... the docid of user
      * 
@@ -26,7 +28,7 @@ exports.getClassroomsForStudent = async function (userId){
     }
 }
 
-exports.getClassroomsForTeacher = async function (userId){
+const getClassroomsForTeacher = async function (userId){
    /**
      * @param userId ... the docid of user
      * 
@@ -52,7 +54,27 @@ exports.getClassroomsForTeacher = async function (userId){
     }
 }
 
-exports.createNewClassroom = async function (name, color, teacherDocId, displayPicture){
+const getClassroomData = async function(classroomDocId) {
+    /**
+     * @param classroomDocId
+     * 
+     * @return complete data of classroom
+     */
+
+     try {
+        const classroomRef = Classroom.doc(classroomDocId)
+        const classroom = await classroomRef.get()
+        if(!classroom.exists){
+            throw new Error('notfound')
+        }
+
+        return {docId:classroomDocId, ...classroom.data()}
+    } catch (err) {
+        throw err
+    }
+}
+
+const createNewClassroom = async function (name, color, teacherDocId, displayPicture){
     /**
      * @param name
      * @param color
@@ -78,10 +100,10 @@ exports.createNewClassroom = async function (name, color, teacherDocId, displayP
     }
 }
 
-exports.addStudentInClassroom = async function (classroomDocId, studentDocId){
+const addStudentInClassroom = async function (classroomDocId, studentDocId){
     /**
      * @param classroomDocId this classroomDocId is actually docId of classroom
-     * @setudeId
+     * @param studentDocId
      * 
      * @return success amessage on joining classroom
      * 
@@ -96,17 +118,20 @@ exports.addStudentInClassroom = async function (classroomDocId, studentDocId){
         if(!classroom.exists){
             throw new Error('notfound')
         }
-        if(classroom.data().studentIds.includes(studentDocId)) {
+        const classroomData = await getClassroomData(classroomDocId)
+        if(classroomData.studentIds.includes(studentDocId)) {
             throw new Error('duplicate')
         }
 
-        let { studentIds } = classroom.data()
+        let { studentIds } = classroomData
         studentIds.push(studentDocId)
         await classroomRef.set({
-            ...classroom.data(), studentIds,
+            ...classroomData, studentIds,
         })
         return 'Joined Classroom Successfully'
     } catch (err) {
         throw err
     }
 }
+
+module.exports = { getClassroomsForStudent, getClassroomsForTeacher, getClassroomData, createNewClassroom, addStudentInClassroom }
