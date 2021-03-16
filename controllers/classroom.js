@@ -77,3 +77,36 @@ exports.createNewClassroom = async function (name, color, teacherDocId, displayP
         throw err
     }
 }
+
+exports.addStudentInClassroom = async function (classroomDocId, studentDocId){
+    /**
+     * @param classroomDocId this classroomDocId is actually docId of classroom
+     * @setudeId
+     * 
+     * @return success amessage on joining classroom
+     * 
+     * search for the classroom docid again given classroomDocId
+     * get docid of user from uid
+     * add docid in array of studentIds of searched classroom
+     */
+
+    try {
+        const classroomRef = Classroom.doc(classroomDocId)
+        const classroom = await classroomRef.get()
+        if(!classroom.exists){
+            throw new Error('notfound')
+        }
+        if(classroom.data().studentIds.includes(studentDocId)) {
+            throw new Error('duplicate')
+        }
+
+        let { studentIds } = classroom.data()
+        studentIds.push(studentDocId)
+        await classroomRef.set({
+            ...classroom.data(), studentIds,
+        })
+        return 'Joined Classroom Successfully'
+    } catch (err) {
+        throw err
+    }
+}

@@ -6,16 +6,16 @@ exports.successResponse = function(res, respData) {
     return res.status(200).json(data)
 }
 
-exports.createdResponse = function(res, message){
+exports.createdResponse = function(res, message='Request completed Sucessfully'){
     const data = {
-        message: message || 'Request copleted Sucessfully'
+        message
     }
     return res.status(201).json(data)
 }
 
-exports.notFoundErrorResponse = function(res) {
+exports.notFoundErrorResponse = function(res, message='Data you requested for doesnot exists') {
     const data = {
-        error: 'Data you requested for doesnot exists'
+        error: message 
     }
     return res.status(404).json(data)
 }
@@ -27,9 +27,9 @@ exports.incompleteRequestBodyResponse = function(res, message) {
     return res.status(400).json(data)
 }
 
-exports.duplicateDataResponse = function(res, message) {
+exports.duplicateDataResponse = function(res, message='Data already exists') {
     const data = {
-        message: 'Data already exists'
+        error: message
     }
     return res.status(409).json(data)
 }

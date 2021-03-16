@@ -40,4 +40,26 @@ router.post('/', async (req, res) => {
 
 })
 
+router.put('/', async (req, res) => {
+    //api for addding student into the clasroom
+    const { classroomDocId, studentDocId } = req.body
+
+    if(!(classroomDocId && studentDocId)) {
+        return apiResponse.incompleteRequestBodyResponse(res, 'Provide both classroomDocId and StudentDocId')
+    }
+
+    try {
+        const responseMessage = await ClassroomController.addStudentInClassroom(classroomDocId, studentDocId)
+        return apiResponse.createdResponse(res, responseMessage)
+    } catch (err) {
+        console.log(err.message)
+        if(err.message === 'notfound')
+            return apiResponse.notFoundErrorResponse(res, 'Classroom for given classroomDocId doesnot exists')
+        else if (err.message === 'duplicate')
+            return apiResponse.duplicateDataResponse(res, 'Student already exists in this classroom')
+        else
+            return apiResponse.internalServerError(res, err.message)
+    }
+})
+
 module.exports = router
