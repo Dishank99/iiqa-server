@@ -15,39 +15,6 @@ exports.getOnlyUserProfileFromAuthUID = async function (id){
     } catch (err) {throw err}
 }
 
-async function getUserProfile(id){
-    /**
-     * @param {string} id
-     * 
-     * @return {Object} userProfile
-     * 
-     * get the user doc from given id
-     * get the student data if from doc id if user type is student
-     */
-    if(!id){
-        return null
-    }
-    let userData = null
-    let responseData = null
-    userData = await getOnlyUserProfile(id)
-    if (userData.isStudent){
-        let studentData = null
-        
-        const studentProfilesList = await Student.where('userDocId', '==', userData.docId).get()
-        if(studentProfilesList.empty){
-            throw new Error('No matching student record')
-        }
-        studentProfilesList.forEach(studentProfile => {
-            studentData = studentProfile.data()
-            responseData = {...userData, ...studentData}
-        })
-    } else {
-        responseData = userData
-    }
-    return responseData
-    
-}
-
 exports.getProfileDataFromDocId = async function (docId){
     /**
      * @param {string} docId

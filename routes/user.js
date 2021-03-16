@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
         } else if(userAuthId && !userDocId) {
             userData = await UserController.getOnlyUserProfileFromAuthUID(userAuthId)            
         } else {
-            return apiResponse.incompleteRequestBodyResponse(res, 'Please provide valid data. Either userAuthId or userDocId')
+            return apiResponse.incompleteRequestBodyResponse(res, 'Either userAuthId or userDocId')
         }
 
         return apiResponse.successResponse(res, userData)
@@ -27,11 +27,11 @@ router.post('/', async (req, res) => {
     const { fname, lname, uid, isTeacher, isStudent } = req.body
     console.log(req.body)
     if(!(fname && lname && uid && (isTeacher || isStudent))){
-        return apiResponse.incompleteRequestBodyResponse(res, 'Please provide valid data. fname, lname, uid, isTeacher or isStudent are required')
+        return apiResponse.incompleteRequestBodyResponse(res, 'fname, lname, uid, isTeacher or isStudent are required')
     }
     try {
         let respMessage = ''
-        if(!(isStudent === undefined))
+        if(isStudent)
             respMessage = await UserController.createUser({ fname, lname, uid, isTeacher:false, isStudent:true })
         else 
             respMessage = await UserController.createUser({ fname, lname, uid, isTeacher:true, isStudent:false })

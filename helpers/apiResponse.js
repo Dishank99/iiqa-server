@@ -22,7 +22,7 @@ exports.notFoundErrorResponse = function(res) {
 
 exports.incompleteRequestBodyResponse = function(res, message) {
     const data = {
-        error: message
+        error: `Please provide valid data. ${message}`
     }
     return res.status(400).json(data)
 }
