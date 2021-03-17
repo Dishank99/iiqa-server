@@ -2,7 +2,14 @@ const { Router } = require('express')
 const router = Router()
 
 const QuizController = require('../controllers/quiz')
+const { getProfileDataFromDocId } = require('../controllers/user')
 const apiResponse = require('../helpers/apiResponse')
+
+const getAllAttendeesStudentDataAsync = async function(attendeeData) {
+    const { studentDocId, ...restOfTheData } = attendeeData
+    const studentData = await getProfileDataFromDocId(studentDocId)
+    return { studentData, ...restOfTheData }
+}
 
 router.get('/', async(req, res) => {
     // if classroomDocId only then all the quizzes of that classroom
@@ -54,6 +61,43 @@ router.post('/', async (req, res) => {
         return apiResponse.internalServerError(res, err.message)
     }
 
+})
+
+router.get('/attendees', async (req, res) => {
+    const { classroomDocId, quizDocId } = req.query
+
+    try {
+
+        let response = null
+        if( classroomDocId && quizDocId ) {
+            response = await QuizController.getAllAttendees(classroomDocId, quizDocId)
+            response = await Promise.all(response.map(attendeeData => getAllAttendeesStudentDataAsync(attendeeData)))
+        } else {
+            return apiResponse.incompleteRequestBodyResponse(res, 'Provide both classroomDocId and quizDocId')
+        }
+
+        return apiResponse.successResponse(res, { attendees: response })
+
+    } catch (err) {
+        return apiResponse.internalServerError(res, err.message)
+    }
+})
+
+router.post('/attendees', async (req, res) => {
+    //api for creating the attendee obj with score
+    const { classroomDocId, quizDocId, studentDocId, score, outOffScore } = req.body
+
+    try {
+
+        if(classroomDocId && quizDocId && studentDocId && score && outOffScore){
+            const responseMessage = await QuizController.addAnAttendee(classroomDocId, quizDocId, studentDocId, score, outOffScore)
+            return apiResponse.createdResponse(res, responseMessage)
+        } else {
+            return apiResponse.incompleteRequestBodyResponse(res, 'Provide classroomDocId, quizDocId, studentDocId, score, outOffScore as they all are required')
+        }
+    } catch (err) {
+        return apiResponse.internalServerError(res, err.message)
+    }
 })
 
 module.exports = router

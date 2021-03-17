@@ -111,4 +111,54 @@ const getAllGeneratedQuiz = async function (classroomDocId) {
     }
 }
 
-module.exports = { dummy, generateQuiz, uploadGeneratedQuiz, getSpecifiedGeneratedQuiz, getAllGeneratedQuiz }
+const getAllAttendees = async function (classroomDocId, quizDocId) {
+    /**
+     * @param classroomDocId
+     * @param quizDocId
+     *
+     * @return attendee name and score
+     */
+  
+    try {
+      const listOfAttendeesResp = await firestore
+        .collection(`classrooms/${classroomDocId}/quizzes/${quizDocId}/attendees`)
+        .get();
+      if (listOfAttendeesResp.empty) {
+        return [];
+      }
+      let attendeesDataArray = [];
+      listOfAttendeesResp.forEach((attendee) => {
+        attendeesDataArray.push({ docId: attendee.id, ...attendee.data() });
+      });
+      return attendeesDataArray;
+    } catch (err) {
+      throw err
+    }
+}
+
+const addAnAttendee = async function (classroomDocId, quizDocId, studentDocId, score, outOffScore)
+    {
+    /**
+     * @param classroomDocId
+     * @param quizDocId
+     * @param studentDocId
+     *
+     * @return sucess message on saving the score
+     */
+  
+    try {
+      console.log(classroomDocId, quizDocId, studentDocId, score, outOffScore);
+      await firestore
+        .collection(`classrooms/${classroomDocId}/quizzes/${quizDocId}/attendees`)
+        .add({
+          studentDocId,
+          score: `${score}/${outOffScore}`,
+        });
+  
+      return "Your score saved";
+    } catch (err) {
+      throw new Error(err);
+    }
+}
+
+module.exports = { dummy, generateQuiz, uploadGeneratedQuiz, getSpecifiedGeneratedQuiz, getAllGeneratedQuiz, getAllAttendees, addAnAttendee }
