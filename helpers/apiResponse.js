@@ -34,6 +34,13 @@ exports.duplicateDataResponse = function(res, message='Data already exists') {
     return res.status(409).json(data)
 }
 
+exports.notAuthorizedResponse = function(res, message='You are not authorized') {
+    const data = {
+        error: message
+    }
+    return res.status(403).json(data)
+}
+
 exports.internalServerError = function(res, message) {
     const data = {
         error: message

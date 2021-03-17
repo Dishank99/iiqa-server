@@ -1,6 +1,8 @@
 const { firestore } = require('../configs/firebase')
 const { dlAPI } = require('../helpers/api')
 
+const { getClassroomData } = require('./classroom')
+
 const dummy = async function (imageLinksArray) {
     const imageSets = Array(imageLinksArray.slice(2,imageLinksArray.length-2))
     console.log(imageSets)
@@ -148,6 +150,11 @@ const addAnAttendee = async function (classroomDocId, quizDocId, studentDocId, s
   
     try {
       console.log(classroomDocId, quizDocId, studentDocId, score, outOffScore);
+      // TODO: rethink for this test
+      const classroomData = await getClassroomData(classroomDocId)
+      if(!classroomData.studentIds.includes(studentDocId)) {
+          throw 'notauthorized'
+      }
       await firestore
         .collection(`classrooms/${classroomDocId}/quizzes/${quizDocId}/attendees`)
         .add({
@@ -161,4 +168,32 @@ const addAnAttendee = async function (classroomDocId, quizDocId, studentDocId, s
     }
 }
 
-module.exports = { dummy, generateQuiz, uploadGeneratedQuiz, getSpecifiedGeneratedQuiz, getAllGeneratedQuiz, getAllAttendees, addAnAttendee }
+const studentEligibiltyStatus = async function (classroomDocId, quizDocId, studentId) {
+    try {
+        const classroomDataValidation =  getClassroomData(classroomDocId)
+        const listOfAttendeesRespValidation = firestore
+            .collection(`classrooms/${classroomDocId}/quizzes/${quizDocId}/attendees`)
+            .where('studentDocId', '==', studentId)
+            .get();
+        const eligibilityValidations = await Promise.all([classroomDataValidation, listOfAttendeesRespValidation])
+        const [classroomData ,listOfAttendeesResp] = eligibilityValidations
+        console.log(classroomData)
+        if(listOfAttendeesResp.empty && classroomData.studentIds.includes(studentId))
+            return 1
+        else
+            return 0
+    } catch (err) {
+      throw err
+    }
+}
+
+module.exports = {
+                    dummy,
+                    generateQuiz,
+                    uploadGeneratedQuiz,
+                    getSpecifiedGeneratedQuiz,
+                    getAllGeneratedQuiz,
+                    getAllAttendees,
+                    addAnAttendee,
+                    studentEligibiltyStatus
+                }

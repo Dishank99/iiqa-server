@@ -64,19 +64,23 @@ router.post('/', async (req, res) => {
 })
 
 router.get('/attendees', async (req, res) => {
-    const { classroomDocId, quizDocId } = req.query
+    const { classroomDocId, quizDocId, eligibilityCheck, studentDocId } = req.query
 
     try {
 
         let response = null
-        if( classroomDocId && quizDocId ) {
+        if( classroomDocId && quizDocId && !(eligibilityCheck && studentDocId) ) {
             response = await QuizController.getAllAttendees(classroomDocId, quizDocId)
             response = await Promise.all(response.map(attendeeData => getAllAttendeesStudentDataAsync(attendeeData)))
+            response = { attendees: response }
+        } else if (eligibilityCheck && classroomDocId && quizDocId && studentDocId) {
+            response = await QuizController.studentEligibiltyStatus(classroomDocId, quizDocId, studentDocId)
+            response = { eligibilityStatus: response }
         } else {
             return apiResponse.incompleteRequestBodyResponse(res, 'Provide both classroomDocId and quizDocId')
         }
 
-        return apiResponse.successResponse(res, { attendees: response })
+        return apiResponse.successResponse(res, response)
 
     } catch (err) {
         return apiResponse.internalServerError(res, err.message)
@@ -96,7 +100,7 @@ router.post('/attendees', async (req, res) => {
             return apiResponse.incompleteRequestBodyResponse(res, 'Provide classroomDocId, quizDocId, studentDocId, score, outOffScore as they all are required')
         }
     } catch (err) {
-        return apiResponse.internalServerError(res, err.message)
+        return err.message === 'notauthorized'? apiResponse.notAuthorizedResponse(res, 'Your are not the part of clasroom') : apiResponse.internalServerError(res, err.message)
     }
 })
 
