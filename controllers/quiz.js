@@ -65,4 +65,50 @@ const uploadGeneratedQuiz = async function (quizData, classroomDocId) {
     }
 }
 
-module.exports = { dummy, generateQuiz, uploadGeneratedQuiz }
+const getSpecifiedGeneratedQuiz = async function (classroomDocId, quizDocId){
+    /**
+     * @param classroomDocId
+     * @param quizDocId
+     * 
+     * @return quiz data for the given classroom and quiz id
+     */
+  
+    try {
+      const quizObj = await firestore.collection(`classrooms/${classroomDocId}/quizzes`).doc(quizDocId).get()
+      if(!quizObj.exists){
+        throw new Error('notfound')
+      }
+      let { quizData, dateTimeOfCreation } = quizObj.data()
+      quizData = JSON.parse(quizData)
+      const dateTimeObj = dateTimeOfCreation.toDate()
+      dateTimeOfCreation = `${dateTimeObj.toDateString()} ${dateTimeObj.toLocaleTimeString()}`
+      return { dateTimeOfCreation, quizData }
+    } catch (err) {
+      throw err
+    }
+}
+
+const getAllGeneratedQuiz = async function (classroomDocId) {
+    /**
+     * @param classroomDocId
+     *
+     * @return array of quizzes and data
+     */
+  
+    try {
+      const listOfQuizzesResp = await firestore
+        .collection(`classrooms/${classroomDocId}/quizzes`)
+        .get();
+      if (listOfQuizzesResp.empty) return [];
+  
+      const arrayOfQuizData = [];
+      listOfQuizzesResp.forEach((eachQuizData) => {
+        arrayOfQuizData.push({ docId: eachQuizData.id, ...eachQuizData.data() });
+      });
+      return arrayOfQuizData;
+    } catch (err) {
+      throw new err;
+    }
+}
+
+module.exports = { dummy, generateQuiz, uploadGeneratedQuiz, getSpecifiedGeneratedQuiz, getAllGeneratedQuiz }
