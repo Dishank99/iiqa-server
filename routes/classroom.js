@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
             return apiResponse.incompleteRequestBodyResponse(res, 'Provide either studentDocId or teacherDocId or classroomDocId')
         }
 
-        return apiResponse.successResponse(res, response)
+        return apiResponse.successResponse(res, {classroomData: response})
     } catch (err) {
         return err.message === 'notfound'? apiResponse.notFoundErrorResponse(res,'Classroom for given classroomDocId doesnot exists') : apiResponse.internalServerError(res, err.message)
     }

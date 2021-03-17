@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
             return apiResponse.incompleteRequestBodyResponse(res, 'Either userAuthId or userDocId')
         }
 
-        return apiResponse.successResponse(res, userData)
+        return apiResponse.successResponse(res, {user: userData})
     } catch (err) {
         return err.message === 'notfound'? apiResponse.notFoundErrorResponse(res) : apiResponse.internalServerError(res, err.message)
     }

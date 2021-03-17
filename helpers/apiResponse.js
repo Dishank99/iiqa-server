@@ -1,6 +1,6 @@
 exports.successResponse = function(res, respData) {
     const data = {
-        data: respData,
+        ...respData,
         message: 'success'
     }
     return res.status(200).json(data)
