@@ -6,6 +6,8 @@ const cors = require('cors')
 const UserRoutes = require('./routes/user')
 const ClassroomRoutes = require('./routes/classroom')
 const QuizRoutes = require('./routes/quiz')
+const ImageSetRoutes = require('./routes/imageSet')
+const AvatarRoutes = require('./routes/avatar')
 
 //middlewares
 app.use(cors())
@@ -16,6 +18,8 @@ app.use(express.urlencoded({extended: true}))
 app.use('/users/', UserRoutes)
 app.use('/classrooms/', ClassroomRoutes)
 app.use('/quiz/', QuizRoutes)
+app.use('/imageset', ImageSetRoutes)
+app.use('/avatar', AvatarRoutes)
 
 //port
 const port = process.env.PORT || 8000

@@ -1,5 +1,6 @@
 const { firestore } = require('../configs/firebase')
 const { dlAPI } = require('../helpers/api')
+const { processImageSetsLinksForAPI } = require('../helpers/utilities')
 
 const { getClassroomData } = require('./classroom')
 
@@ -34,8 +35,9 @@ const generateQuiz = async function (imageLinksArray) {
      */
 
     try {
+        const processedImageLinksArray = processImageSetsLinksForAPI(imageLinksArray)
         const quizApiResponse = await dlAPI.post('', {
-            image_url_array:imageLinksArray
+            image_url_array:processedImageLinksArray
         })
         console.log(quizApiResponse)
         return quizApiResponse.data;
