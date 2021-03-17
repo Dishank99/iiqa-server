@@ -109,7 +109,7 @@ const getAllGeneratedQuiz = async function (classroomDocId) {
       });
       return arrayOfQuizData;
     } catch (err) {
-      throw new err;
+      throw err;
     }
 }
 
@@ -153,7 +153,7 @@ const addAnAttendee = async function (classroomDocId, quizDocId, studentDocId, s
       // TODO: rethink for this test
       const classroomData = await getClassroomData(classroomDocId)
       if(!classroomData.studentIds.includes(studentDocId)) {
-          throw 'notauthorized'
+          throw new Error('notauthorized')
       }
       await firestore
         .collection(`classrooms/${classroomDocId}/quizzes/${quizDocId}/attendees`)
@@ -164,7 +164,7 @@ const addAnAttendee = async function (classroomDocId, quizDocId, studentDocId, s
   
       return "Your score saved";
     } catch (err) {
-      throw new Error(err);
+      throw err
     }
 }
 
