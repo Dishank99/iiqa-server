@@ -35,9 +35,9 @@ exports.getProfileDataFromDocId = async function (docId){
 
 exports.createUser = async function (data){
     /**
-     * @param {Object} data
+     * @param data
      * 
-     * @return {string} success response
+     * @return success response
      */
     try {
         const userProfilesList = await User.where('uid','==',data.uid).get()
