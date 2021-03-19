@@ -16,8 +16,8 @@ app.use(express.urlencoded({extended: true}))
 //routes
 app.use('/users/', UserRoutes)
 app.use('/classrooms/', ClassroomRoutes)
-app.use('/imageset', ImageSetRoutes)
-app.use('/avatar', AvatarRoutes)
+app.use('/imagesets', ImageSetRoutes)
+app.use('/avatars', AvatarRoutes)
 
 //port
 const port = process.env.PORT || 8000

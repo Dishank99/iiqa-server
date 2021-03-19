@@ -16,9 +16,11 @@ router.get('/', async (req, res) => {
             response = await ClassroomController.getClassroomsForTeacher(teacherDocId)
         } else if (classroomDocId && !(teacherDocId && studentDocId)) {
             const classroomData = await ClassroomController.getClassroomData(classroomDocId)
-            const { studentIds, ...restOfData } = classroomData
-            const studentDataList = await Promise.all(studentIds.map(studentDocId => getProfileDataFromDocId(studentDocId)))
-            response = { ...restOfData, studentDataList  }
+            const { studentIds, teacherId, ...restOfData } = classroomData
+            const studentDataListPromise = Promise.all(studentIds.map(studentDocId => getProfileDataFromDocId(studentDocId)))
+            const teacherDataPromise = getProfileDataFromDocId(teacherId)
+            const [ teacherData, studentDataList ] = await Promise.all([teacherDataPromise, studentDataListPromise])
+            response = { ...restOfData, studentDataList, teacherData  }
         } else {
             return apiResponse.incompleteRequestBodyResponse(res, 'Provide either studentDocId or teacherDocId or classroomDocId')
         }
@@ -109,7 +111,7 @@ router.post('/quiz', async (req, res) => {
         if (generate && !imageLinksArray) {
             return apiResponse.incompleteRequestBodyResponse(res, 'Provide either generate param and imageLinksArray or classroomDocId and QuizData')
         } else if( generate && imageLinksArray && !(classroomDocId && quizData) ) {
-            response = await ClassroomController.dummy(imageLinksArray)
+            response = await ClassroomController.generateQuiz(imageLinksArray)
         } else if ( classroomDocId && quizData && !(generate && imageLinksArray) ) {
             response = await ClassroomController.uploadGeneratedQuiz(quizData, classroomDocId)
             response = {quizDocId: response}
@@ -120,7 +122,7 @@ router.post('/quiz', async (req, res) => {
         return apiResponse.successResponse(res, response)
 
     } catch (err) {
-        return apiResponse.internalServerError(res, err.message)
+        return apiResponse.internalServerError(res, 'Failed to generate quiz')
     }
 
 })

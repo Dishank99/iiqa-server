@@ -37,7 +37,7 @@ router.post('/', async (req, res) => {
             respMessage = await UserController.createUser({ fname, lname, uid, isTeacher:true, isStudent:false })
         return apiResponse.createdResponse(res, respMessage)
     } catch (err) {
-        throw err.message === 'duplicate'? apiResponse.duplicateDataResponse(res) : apiResponse.internalServerError(res, err.message)
+        throw err.message === 'duplicate'? apiResponse.duplicateDataResponse(res, 'Account already exists') : apiResponse.internalServerError(res, err.message)
     }
 })
 

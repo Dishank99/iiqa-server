@@ -94,6 +94,7 @@ const createNewClassroom = async function (name, color, teacherDocId, displayPic
     try {
         // const { docId } = await getOnlyUserProfile(teacherId)
         // console.log(docId)
+        console.log(name, color, teacherDocId, displayPicture)
         await Classroom.add({
             name, color, teacherId: teacherDocId, studentIds:[], displayPicture
         })
@@ -235,12 +236,15 @@ const getAllGeneratedQuiz = async function (classroomDocId) {
     try {
       const listOfQuizzesResp = await firestore
         .collection(`classrooms/${classroomDocId}/quizzes`)
+        .orderBy('dateTimeOfCreation', 'desc')
         .get();
       if (listOfQuizzesResp.empty) return [];
   
       const arrayOfQuizData = [];
       listOfQuizzesResp.forEach((eachQuizData) => {
-        arrayOfQuizData.push({ docId: eachQuizData.id, ...eachQuizData.data() });
+        let { dateTimeOfCreation, ...restOfTheData } = eachQuizData.data()
+        dateTimeOfCreation = `${dateTimeOfCreation.toDate().toDateString()} ${dateTimeOfCreation.toDate().toLocaleTimeString()}`
+        arrayOfQuizData.push({ docId: eachQuizData.id, dateTimeOfCreation, ...restOfTheData });
       });
       return arrayOfQuizData;
     } catch (err) {
