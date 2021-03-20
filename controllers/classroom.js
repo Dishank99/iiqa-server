@@ -353,7 +353,6 @@ const createImageSetForClassroom = async function (docId, imageLinks) {
      */
   
     try {
-      // TODO: set parameter for maximum no of images allowed
       const subCollectionForImageSet = firestore.collection(
         `classrooms/${docId}/imagesets`
       );
