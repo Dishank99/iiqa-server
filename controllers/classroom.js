@@ -2,7 +2,6 @@ const Classroom  = require('../models/classroom')
 const { firestore } = require('../configs/firebase')
 const { dlAPI } = require('../helpers/api')
 const { processImageSetsLinksForAPI } = require('../helpers/utilities')
-const { getProfileDataFromDocId } = require('./user')
 const { getImageSet } = require('./imageSet')
 
 const getClassroomsForStudent = async function (userId){
