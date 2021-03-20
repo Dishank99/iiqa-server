@@ -117,11 +117,6 @@ const addStudentInClassroom = async function (classroomDocId, studentDocId){
      */
 
     try {
-        const classroomRef = Classroom.doc(classroomDocId)
-        const classroom = await classroomRef.get()
-        if(!classroom.exists){
-            throw new Error('notfound')
-        }
         const classroomData = await getClassroomData(classroomDocId)
         if(classroomData.studentIds.includes(studentDocId)) {
             throw new Error('duplicate')
@@ -129,7 +124,7 @@ const addStudentInClassroom = async function (classroomDocId, studentDocId){
 
         let { studentIds } = classroomData
         studentIds.push(studentDocId)
-        await classroomRef.set({
+        await Classroom.doc(classroomDocId).set({
             ...classroomData, studentIds,
         })
         return 'Joined Classroom Successfully'
@@ -139,8 +134,7 @@ const addStudentInClassroom = async function (classroomDocId, studentDocId){
 }
 
 const dummy = async function (imageLinksArray) {
-    const imageSets = Array(imageLinksArray.slice(2,imageLinksArray.length-2))
-    console.log(imageSets)
+    console.log(imageLinksArray)
     const respObj = {
                       answer: {
                         correct_answer: "yes",
@@ -150,7 +144,7 @@ const dummy = async function (imageLinksArray) {
                         "https://firebasestorage.googleapis.com/v0/b/iiqa-dev.appspot.com/o/misc%2Fbaby.jpeg?alt=media",
                       question: " is the baby happy ?",
                     }
-    const resp = imageSets.map(_ => respObj)
+    const resp = imageLinksArray.map(_ => respObj)
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         resolve({
