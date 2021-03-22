@@ -103,7 +103,7 @@ const createNewClassroom = async function (name, color, teacherDocId, displayPic
     }
 }
 
-const addStudentInClassroom = async function (classroomDocId, studentDocId){
+const updateClassroom = async function (classroomDocId, data){
     /**
      * @param classroomDocId this classroomDocId is actually docId of classroom
      * @param studentDocId
@@ -116,17 +116,28 @@ const addStudentInClassroom = async function (classroomDocId, studentDocId){
      */
 
     try {
-        const classroomData = await getClassroomData(classroomDocId)
-        if(classroomData.studentIds.includes(studentDocId)) {
-            throw new Error('duplicate')
+        const { studentDocId, teacherDocId, color, displayPicture } = data 
+        let classroomData = await getClassroomData(classroomDocId)
+        if(studentDocId) {
+          if(classroomData.studentIds.includes(studentDocId)) {
+              throw new Error('duplicate')
+          }
+          classroomData = {...classroomData, studentIds: [...classroomData.studentIds, studentDocId]}
+        }
+        if (teacherDocId) {
+          classroomData = {...classroomData, teacherId: teacherDocId}
+        }
+        if(color) {
+          classroomData = {...classroomData, color}
+        }
+        if(displayPicture) {
+          classroomData = {...classroomData, displayPicture}
         }
 
-        let { studentIds } = classroomData
-        studentIds.push(studentDocId)
         await Classroom.doc(classroomDocId).set({
-            ...classroomData, studentIds,
+            ...classroomData
         })
-        return 'Joined Classroom Successfully'
+        return 'Updated Classroom Successfully'
     } catch (err) {
         throw err
     }
@@ -372,7 +383,7 @@ module.exports = {
                     getClassroomsForTeacher,
                     getClassroomData,
                     createNewClassroom,
-                    addStudentInClassroom,
+                    updateClassroom,
                     //quiz
                     dummy,
                     generateQuiz,

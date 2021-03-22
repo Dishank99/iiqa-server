@@ -5,29 +5,48 @@ const ClassroomController = require('../controllers/classroom')
 const { getProfileDataFromDocId } = require('../controllers/user')
 const apiResponse = require('../helpers/apiResponse')
 
-router.get('/', async (req, res) => {
-    const { studentDocId, teacherDocId, classroomDocId } = req.query
+router.get('/:classroomDocId', async (req, res) => {
+    const { classroomDocId } = req.params
     
+    if(!classroomDocId){
+        return apiResponse.incompleteRequestBodyResponse(res, 'Provide classroomDocId')
+    }
+
     try {
         let response = null
-        if(studentDocId && !(teacherDocId && classroomDocId)) {
-            response = await ClassroomController.getClassroomsForStudent(studentDocId)
-        } else if (teacherDocId && !(studentDocId && classroomDocId)) {
-            response = await ClassroomController.getClassroomsForTeacher(teacherDocId)
-        } else if (classroomDocId && !(teacherDocId && studentDocId)) {
-            const classroomData = await ClassroomController.getClassroomData(classroomDocId)
-            const { studentIds, teacherId, ...restOfData } = classroomData
-            const studentDataListPromise = Promise.all(studentIds.map(studentDocId => getProfileDataFromDocId(studentDocId)))
-            const teacherDataPromise = getProfileDataFromDocId(teacherId)
+        const classroomData = await ClassroomController.getClassroomData(classroomDocId)
+        const { studentIds, teacherId, ...restOfData } = classroomData
+        const studentDataListPromise = Promise.all(studentIds.map(studentDocId => getProfileDataFromDocId(studentDocId)))
+        const teacherDataPromise = getProfileDataFromDocId(teacherId)
+        try {
             const [ teacherData, studentDataList ] = await Promise.all([teacherDataPromise, studentDataListPromise])
             response = { ...restOfData, studentDataList, teacherData  }
-        } else {
-            return apiResponse.incompleteRequestBodyResponse(res, 'Provide either studentDocId or teacherDocId or classroomDocId')
+        } catch (err) {
+            response = { ...classroomData }
         }
 
         return apiResponse.successResponse(res, {classroomData: response})
     } catch (err) {
         return err.message === 'notfound'? apiResponse.notFoundErrorResponse(res,'Classroom for given classroomDocId doesnot exists') : apiResponse.internalServerError(res, err.message)
+    }
+})
+
+router.get('/', async (req, res) => {
+    const { studentDocId, teacherDocId } = req.query
+    
+    try {
+        let response = null
+        if(studentDocId && !teacherDocId) {
+            response = await ClassroomController.getClassroomsForStudent(studentDocId)
+        } else if (teacherDocId && !studentDocId) {
+            response = await ClassroomController.getClassroomsForTeacher(teacherDocId)
+        } else {
+            return apiResponse.incompleteRequestBodyResponse(res, 'Provide either studentDocId or teacherDocId or classroomDocId')
+        }
+
+        return apiResponse.successResponse(res, {classrooms: response})
+    } catch (err) {
+        return apiResponse.internalServerError(res, err.message)
     }
 })
 
@@ -47,16 +66,23 @@ router.post('/', async (req, res) => {
 
 })
 
-router.put('/', async (req, res) => {
+router.patch('/:classroomDocId', async (req, res) => {
     //api for addding student into the clasroom
-    const { classroomDocId, studentDocId } = req.body
+    const { classroomDocId } = req.params
+    const dataToBePatched = req.body
 
-    if(!(classroomDocId && studentDocId)) {
-        return apiResponse.incompleteRequestBodyResponse(res, 'Provide both classroomDocId and StudentDocId')
+    if(!(classroomDocId && dataToBePatched)) {
+        return apiResponse.incompleteRequestBodyResponse(res, 'Provide both classroomDocId and request body')
     }
 
     try {
-        const responseMessage = await ClassroomController.addStudentInClassroom(classroomDocId, studentDocId)
+        if(dataToBePatched.studentDocId) await getProfileDataFromDocId(dataToBePatched.studentDocId)
+    } catch (err) {
+        return apiResponse.incompleteRequestBodyResponse(res, 'Student of this docId doesnot exists')
+    }
+
+    try {
+        const responseMessage = await ClassroomController.updateClassroom(classroomDocId, dataToBePatched)
         return apiResponse.createdResponse(res, responseMessage)
     } catch (err) {
         console.log(err.message)
@@ -75,30 +101,41 @@ const getAllAttendeesStudentDataAsync = async function(attendeeData) {
     return { studentData, ...restOfTheData }
 }
 
-router.get('/quiz', async(req, res) => {
-    // if classroomDocId only then all the quizzes of that classroom
+router.get('/:classroomDocId/quizzes/', async (req, res) => {
+    const { classroomDocId } = req.params
+
+    try {
+        if(classroomDocId){
+            const response = await ClassroomController.getAllGeneratedQuiz(classroomDocId)
+            return apiResponse.successResponse(res, { quizzes: response})
+        } else {
+            return apiResponse.incompleteRequestBodyResponse(res, 'Provide classroomDocId')
+        }
+    } catch (err) {
+        return apiResponse.internalServerError(res, err.message)
+    }
+})
+
+router.get('/:classroomDocId/quizzes/:quizDocId', async(req, res) => {
     // if both classroomDocId and quizDocId then return specified quiz data
-    const { classroomDocId, quizDocId } = req.query
+    const { classroomDocId, quizDocId } = req.params
 
     try {
 
-        let response = null
         if(classroomDocId && quizDocId) {
-            response = await ClassroomController.getSpecifiedGeneratedQuiz(classroomDocId, quizDocId)
-        } else if (classroomDocId && ! quizDocId) {
-            response = await ClassroomController.getAllGeneratedQuiz(classroomDocId)
+            const response = await ClassroomController.getSpecifiedGeneratedQuiz(classroomDocId, quizDocId)
+            return apiResponse.successResponse(res, { quizData: response})
         } else {
             return apiResponse.incompleteRequestBodyResponse(res, 'Provide either both classroomDocId and quizDocId or just classroomDocId')
         }
 
-        return apiResponse.successResponse(res, { quizData: response})
 
     } catch (err) {
         return err.message === 'notfound'? apiResponse.notFoundErrorResponse(res, 'Quiz for given data doesnot exist') : apiResponse.internalServerError(res, err.message)
     }
 })
 
-router.post('/quiz', async (req, res) => {
+router.post('/quizzes', async (req, res) => {
     // to put up new quiz
     // quiz data and classroomDocId
 
@@ -127,17 +164,32 @@ router.post('/quiz', async (req, res) => {
 
 })
 
-router.get('/quiz/attendees', async (req, res) => {
-    const { classroomDocId, quizDocId, eligibilityCheck, studentDocId } = req.query
+router.get('/:classroomDocId/quizzes/:quizDocId/attendees', async (req, res) => {
+    const { classroomDocId, quizDocId } = req.params
+
+    try {
+        let response = null
+        if(classroomDocId && quizDocId){
+            response = await ClassroomController.getAllAttendees(classroomDocId, quizDocId)
+            response = await Promise.all(response.map(attendeeData => getAllAttendeesStudentDataAsync(attendeeData)))
+            response = { attendees: response }
+            return apiResponse.successResponse(res, response)
+        } else {
+            return apiResponse.incompleteRequestBodyResponse(res, 'Provide both classroomDocId and quizDocId')
+        }
+    } catch (err) {
+        return apiResponse.internalServerError(res, err.message)
+    }
+})
+
+router.get('/:classroomDocId/quizzes/:quizDocId/attendees/:studentDocId', async (req, res) => {
+    const { classroomDocId, quizDocId, studentDocId } = req.params
+    const { eligibilityCheck } = req.query
 
     try {
 
         let response = null
-        if( classroomDocId && quizDocId && !(eligibilityCheck && studentDocId) ) {
-            response = await ClassroomController.getAllAttendees(classroomDocId, quizDocId)
-            response = await Promise.all(response.map(attendeeData => getAllAttendeesStudentDataAsync(attendeeData)))
-            response = { attendees: response }
-        } else if (eligibilityCheck && classroomDocId && quizDocId && studentDocId) {
+        if (eligibilityCheck && classroomDocId && quizDocId && studentDocId) {
             response = await ClassroomController.studentEligibiltyStatus(classroomDocId, quizDocId, studentDocId)
             response = { eligibilityStatus: response }
         } else {
@@ -151,7 +203,7 @@ router.get('/quiz/attendees', async (req, res) => {
     }
 })
 
-router.post('/quiz/attendees', async (req, res) => {
+router.post('/quizzes/attendees', async (req, res) => {
     //api for creating the attendee obj with score
     const { classroomDocId, quizDocId, studentDocId, score, outOffScore } = req.body
 
@@ -168,8 +220,8 @@ router.post('/quiz/attendees', async (req, res) => {
     }
 })
 
-router.get('/imageset', async (req, res) => {
-    const { classroomDocId } = req.query
+router.get('/:classroomDocId/imagesets', async (req, res) => {
+    const { classroomDocId } = req.params
 
     try {
 
@@ -186,7 +238,7 @@ router.get('/imageset', async (req, res) => {
 
 })
 
-router.post('/imageset', async (req, res) => {
+router.post('/imagesets', async (req, res) => {
     const { classroomDocId, imageLinks } = req.body
 
     try {
