@@ -140,7 +140,7 @@ router.post('/quizzes', async (req, res) => {
     // quiz data and classroomDocId
 
     const { generate } = req.query
-    const { imageLinksArray, classroomDocId, quizData } = req.body
+    const { imageLinksArray, classroomDocId, quizData, quizName } = req.body
 
     try {
 
@@ -148,9 +148,9 @@ router.post('/quizzes', async (req, res) => {
         if (generate && !imageLinksArray) {
             return apiResponse.incompleteRequestBodyResponse(res, 'Provide either generate param and imageLinksArray or classroomDocId and QuizData')
         } else if( generate && imageLinksArray && !(classroomDocId && quizData) ) {
-            response = await ClassroomController.generateQuiz(imageLinksArray)
+            response = await ClassroomController.dummy(imageLinksArray)
         } else if ( classroomDocId && quizData && !(generate && imageLinksArray) ) {
-            response = await ClassroomController.uploadGeneratedQuiz(quizData, classroomDocId)
+            response = await ClassroomController.uploadGeneratedQuiz(quizData, classroomDocId, quizName)
             response = {quizDocId: response}
         } else {
             return apiResponse.incompleteRequestBodyResponse(res, 'Provide either generate param and imageLinksArray or classroomDocId and QuizData')

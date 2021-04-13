@@ -184,10 +184,11 @@ const generateQuiz = async function (imageLinksArray) {
     }
 }
 
-const uploadGeneratedQuiz = async function (quizData, classroomDocId) {
+const uploadGeneratedQuiz = async function (quizData, classroomDocId, quizName) {
     /**
      * @param quizData set of quistion answrs and imageLinks to be stored
      * @param classroomDocId
+     * @param quizName
      *
      * @return return quiz docId
      */
@@ -199,6 +200,7 @@ const uploadGeneratedQuiz = async function (quizData, classroomDocId) {
         .add({
           dateTimeOfCreation: currentdate,
           quizData: JSON.stringify(quizData),
+          quizName,
         });
   
       return quizDocId;
@@ -220,11 +222,11 @@ const getSpecifiedGeneratedQuiz = async function (classroomDocId, quizDocId){
       if(!quizObj.exists){
         throw new Error('notfound')
       }
-      let { quizData, dateTimeOfCreation } = quizObj.data()
+      let { quizData, dateTimeOfCreation, ...rest } = quizObj.data()
       quizData = JSON.parse(quizData)
       const dateTimeObj = dateTimeOfCreation.toDate()
       dateTimeOfCreation = `${dateTimeObj.toDateString()} ${dateTimeObj.toLocaleTimeString()}`
-      return { dateTimeOfCreation, quizData }
+      return { dateTimeOfCreation, quizData, ...rest }
     } catch (err) {
       throw err
     }
@@ -247,8 +249,11 @@ const getAllGeneratedQuiz = async function (classroomDocId) {
       const arrayOfQuizData = [];
       listOfQuizzesResp.forEach((eachQuizData) => {
         let { dateTimeOfCreation, ...restOfTheData } = eachQuizData.data()
-        dateTimeOfCreation = `${dateTimeOfCreation.toDate().toDateString()} ${dateTimeOfCreation.toDate().toLocaleTimeString()}`
-        arrayOfQuizData.push({ docId: eachQuizData.id, dateTimeOfCreation, ...restOfTheData });
+        // dateTimeOfCreation = `${dateTimeOfCreation.toDate().toDateString()} ${dateTimeOfCreation.toDate().toLocaleTimeString()}`
+        const dateOfCreation = dateTimeOfCreation.toDate().toDateString()
+        const timeOfCreation = dateTimeOfCreation.toDate().toLocaleTimeString()
+        const dateTime = {dateOfCreation, timeOfCreation}
+        arrayOfQuizData.push({ docId: eachQuizData.id, dateTime, ...restOfTheData });
       });
       return arrayOfQuizData;
     } catch (err) {
