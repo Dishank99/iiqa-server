@@ -139,15 +139,23 @@ router.post('/quizzes', async (req, res) => {
     // to put up new quiz
     // quiz data and classroomDocId
 
+    if(req.method == "OPTIONS"){
+        res.set('Access-Control-Allow-Origin', '*');
+        res.set('Access-Control-Allow-Headers', 'Content-Type');
+        return res.status(204).send('');
+    }
+
     const { generate } = req.query
     const { imageLinksArray, classroomDocId, quizData, quizName } = req.body
 
     try {
-
+        console.log('received new request')
         let response = null
         if (generate && !imageLinksArray) {
             return apiResponse.incompleteRequestBodyResponse(res, 'Provide either generate param and imageLinksArray or classroomDocId and QuizData')
         } else if( generate && imageLinksArray && !(classroomDocId && quizData) ) {
+            console.log('new req',imageLinksArray)
+            console.log('dateTime param', req.body.dateTime)
             response = await ClassroomController.dummy(imageLinksArray)
         } else if ( classroomDocId && quizData && !(generate && imageLinksArray) ) {
             response = await ClassroomController.uploadGeneratedQuiz(quizData, classroomDocId, quizName)

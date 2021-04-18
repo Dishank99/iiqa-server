@@ -174,10 +174,10 @@ const generateQuiz = async function (imageLinksArray) {
 
     try {
         const processedImageLinksArray = processImageSetsLinksForAPI(imageLinksArray)
+        console.log(processedImageLinksArray)
         const quizApiResponse = await dlAPI.post('', {
             image_url_array:processedImageLinksArray
         })
-        console.log(quizApiResponse)
         return quizApiResponse.data;
     } catch (err) {
         throw err
