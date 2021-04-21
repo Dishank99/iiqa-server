@@ -383,12 +383,23 @@ const createImageSetForClassroom = async function (docId, imageLinks) {
     }
 }
 
+const isTheUserTeacherOfClassroom = async (user, classroomDocId) => {
+  const { teacherId } = await getClassroomData(classroomDocId)
+  return user.docId === teacherId
+}
+
+const isTheUserStudentOfClassroom = async (user, classroomDocId) => {
+  const { studentIds } = await getClassroomData(classroomDocId)
+  return studentIds.includes(user.docId)
+}
+
 module.exports = {
                     getClassroomsForStudent,
                     getClassroomsForTeacher,
                     getClassroomData,
                     createNewClassroom,
                     updateClassroom,
+                    isTheUserTeacherOfClassroom,
                     //quiz
                     dummy,
                     generateQuiz,

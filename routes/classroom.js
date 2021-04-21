@@ -4,8 +4,11 @@ const router = express.Router()
 const ClassroomController = require('../controllers/classroom')
 const { getProfileDataFromDocId } = require('../controllers/user')
 const apiResponse = require('../helpers/apiResponse')
+const { authenticate, authorize } = require('../middlewares')
+// const authorize = require('../middlewares/authorize')
+// const {authenticate} = require('../middlewares/authenticate')
 
-router.get('/:classroomDocId', async (req, res) => {
+router.get('/:classroomDocId', authorize(['Teacher', 'Student']), async (req, res) => {
     const { classroomDocId } = req.params
     
     if(!classroomDocId){
@@ -31,15 +34,23 @@ router.get('/:classroomDocId', async (req, res) => {
     }
 })
 
-router.get('/', async (req, res) => {
+router.get('/', authorize(['Teacher', 'Student']), async (req, res) => {
     const { studentDocId, teacherDocId } = req.query
     
     try {
         let response = null
         if(studentDocId && !teacherDocId) {
-            response = await ClassroomController.getClassroomsForStudent(studentDocId)
+            if(req.user.isStudent && req.user.docId === studentDocId){
+                response = await ClassroomController.getClassroomsForStudent(studentDocId)
+            } else {
+                return apiResponse.notAuthorizedResponse(res)
+            }
         } else if (teacherDocId && !studentDocId) {
-            response = await ClassroomController.getClassroomsForTeacher(teacherDocId)
+            if(req.user.isTeacher && req.user.docId === teacherDocId){
+                response = await ClassroomController.getClassroomsForTeacher(teacherDocId)
+            } else {
+                return apiResponse.notAuthorizedResponse(res)
+            }
         } else {
             return apiResponse.incompleteRequestBodyResponse(res, 'Provide either studentDocId or teacherDocId or classroomDocId')
         }
@@ -50,11 +61,13 @@ router.get('/', async (req, res) => {
     }
 })
 
-router.post('/', async (req, res) => {
+router.post('/', authorize(['Teacher']), async (req, res) => {
     const { name, color, teacherDocId, displayPicture } = req.body
 
     if(!(name && color && teacherDocId && displayPicture)){
         return apiResponse.incompleteRequestBodyResponse(res, 'Provide name, color teacherDocId, displayPicture as they are required')
+    } else if (req.user.docId !== teacherDocId) {
+        return apiResponse.notAuthorizedResponse(res)
     }
 
     try {
@@ -66,7 +79,7 @@ router.post('/', async (req, res) => {
 
 })
 
-router.patch('/:classroomDocId', async (req, res) => {
+router.patch('/:classroomDocId', authorize(['Teacher', 'Student']), async (req, res) => {
     //api for addding student into the clasroom
     const { classroomDocId } = req.params
     const dataToBePatched = req.body
@@ -76,7 +89,13 @@ router.patch('/:classroomDocId', async (req, res) => {
     }
 
     try {
-        if(dataToBePatched.studentDocId) await getProfileDataFromDocId(dataToBePatched.studentDocId)
+        if(dataToBePatched.studentDocId ) {
+            if(req.user.isStudent && req.user.docId === dataToBePatched.studentDocId){
+                await getProfileDataFromDocId(dataToBePatched.studentDocId)
+            } else {
+                return apiResponse.notAuthorizedResponse(res)
+            }
+        }
     } catch (err) {
         return apiResponse.incompleteRequestBodyResponse(res, 'Student of this docId doesnot exists')
     }
@@ -101,7 +120,7 @@ const getAllAttendeesStudentDataAsync = async function(attendeeData) {
     return { studentData, ...restOfTheData }
 }
 
-router.get('/:classroomDocId/quizzes/', async (req, res) => {
+router.get('/:classroomDocId/quizzes/', authorize(['Teacher', 'Student']), async (req, res) => {
     const { classroomDocId } = req.params
 
     try {
@@ -116,7 +135,7 @@ router.get('/:classroomDocId/quizzes/', async (req, res) => {
     }
 })
 
-router.get('/:classroomDocId/quizzes/:quizDocId', async(req, res) => {
+router.get('/:classroomDocId/quizzes/:quizDocId', authorize(['Teacher', 'Student']), async(req, res) => {
     // if both classroomDocId and quizDocId then return specified quiz data
     const { classroomDocId, quizDocId } = req.params
 
@@ -135,7 +154,7 @@ router.get('/:classroomDocId/quizzes/:quizDocId', async(req, res) => {
     }
 })
 
-router.post('/quizzes', async (req, res) => {
+router.post('/quizzes', authorize(['Teacher', 'Student']), async (req, res) => {
     // to put up new quiz
     // quiz data and classroomDocId
 
@@ -148,16 +167,20 @@ router.post('/quizzes', async (req, res) => {
     const { generate } = req.query
     const { imageLinksArray, classroomDocId, quizData, quizName } = req.body
 
+    const userWantsToGeneratedQuiz = generate && imageLinksArray && !(classroomDocId && quizData)
+    const userWantsToUploadQuiz = classroomDocId && quizData && !(generate && imageLinksArray)
+
     try {
         console.log('received new request')
         let response = null
         if (generate && !imageLinksArray) {
-            return apiResponse.incompleteRequestBodyResponse(res, 'Provide either generate param and imageLinksArray or classroomDocId and QuizData')
-        } else if( generate && imageLinksArray && !(classroomDocId && quizData) ) {
-            console.log('new req',imageLinksArray)
-            console.log('dateTime param', req.body.dateTime)
+            return apiResponse.incompleteRequestBodyResponse(res, 'Provide either "generate" param and imageLinksArray or classroomDocId and QuizData')
+        } else if( userWantsToGeneratedQuiz ) {
             response = await ClassroomController.dummy(imageLinksArray)
-        } else if ( classroomDocId && quizData && !(generate && imageLinksArray) ) {
+        } else if ( userWantsToUploadQuiz ) {
+            const isTheUserTeacherOfClassroom = await ClassroomController.isTheUserTeacherOfClassroom(req.user, classroomDocId)
+            if(!isTheUserTeacherOfClassroom)
+                return apiResponse.notAuthorizedResponse(res)
             response = await ClassroomController.uploadGeneratedQuiz(quizData, classroomDocId, quizName)
             response = {quizDocId: response}
         } else {
@@ -167,17 +190,21 @@ router.post('/quizzes', async (req, res) => {
         return apiResponse.successResponse(res, response)
 
     } catch (err) {
+        console.log(err)
         return apiResponse.internalServerError(res, 'Failed to generate quiz')
     }
 
 })
 
-router.get('/:classroomDocId/quizzes/:quizDocId/attendees', async (req, res) => {
+router.get('/:classroomDocId/quizzes/:quizDocId/attendees', authorize(['Teacher']), async (req, res) => {
     const { classroomDocId, quizDocId } = req.params
 
     try {
         let response = null
         if(classroomDocId && quizDocId){
+            const isTheUserTeacherOfClassroom = await ClassroomController.isTheUserTeacherOfClassroom(req.user, classroomDocId)
+            if(!isTheUserTeacherOfClassroom)
+                return apiResponse.notAuthorizedResponse(res)
             response = await ClassroomController.getAllAttendees(classroomDocId, quizDocId)
             response = await Promise.all(response.map(attendeeData => getAllAttendeesStudentDataAsync(attendeeData)))
             response = { attendees: response }
@@ -190,7 +217,7 @@ router.get('/:classroomDocId/quizzes/:quizDocId/attendees', async (req, res) => 
     }
 })
 
-router.get('/:classroomDocId/quizzes/:quizDocId/attendees/:studentDocId', async (req, res) => {
+router.get('/:classroomDocId/quizzes/:quizDocId/attendees/:studentDocId', authorize(['Teacher', 'Student']), async (req, res) => {
     const { classroomDocId, quizDocId, studentDocId } = req.params
     const { eligibilityCheck } = req.query
 
@@ -211,13 +238,16 @@ router.get('/:classroomDocId/quizzes/:quizDocId/attendees/:studentDocId', async 
     }
 })
 
-router.post('/quizzes/attendees', async (req, res) => {
+router.post('/quizzes/attendees', authorize(['Student']), async (req, res) => {
     //api for creating the attendee obj with score
     const { classroomDocId, quizDocId, studentDocId, score, outOffScore } = req.body
 
     try {
 
         if(classroomDocId && quizDocId && studentDocId && score && outOffScore){
+            if(req.user.docId !== studentDocId){
+                return apiResponse.notAuthorizedResponse(res)
+            }
             const responseMessage = await ClassroomController.addAnAttendee(classroomDocId, quizDocId, studentDocId, score, outOffScore)
             return apiResponse.createdResponse(res, responseMessage)
         } else {
@@ -228,13 +258,16 @@ router.post('/quizzes/attendees', async (req, res) => {
     }
 })
 
-router.get('/:classroomDocId/imagesets', async (req, res) => {
+router.get('/:classroomDocId/imagesets', authorize(['Teacher']), async (req, res) => {
     const { classroomDocId } = req.params
 
     try {
 
         let response = null
         if(classroomDocId) {
+            const isTheUserTeacherOfClassroom = await ClassroomController.isTheUserTeacherOfClassroom(req.user, classroomDocId)
+            if(!isTheUserTeacherOfClassroom)
+                return apiResponse.notAuthorizedResponse(res)
             response = await ClassroomController.getClassroomImageSet(classroomDocId)
         } else {
             return apiResponse.incompleteRequestBodyResponse(res, 'Provide classroomDocId')
@@ -246,11 +279,14 @@ router.get('/:classroomDocId/imagesets', async (req, res) => {
 
 })
 
-router.post('/imagesets', async (req, res) => {
+router.post('/imagesets', authorize(['Teacher']), async (req, res) => {
     const { classroomDocId, imageLinks } = req.body
 
     try {
         if(classroomDocId && imageLinks && imageLinks.length > 0) {
+            const isTheUserTeacherOfClassroom = await ClassroomController.isTheUserTeacherOfClassroom(req.user, classroomDocId)
+            if(!isTheUserTeacherOfClassroom)
+                return apiResponse.notAuthorizedResponse(res)
             const responseMessage = await ClassroomController.createImageSetForClassroom(classroomDocId, imageLinks)
             return apiResponse.createdResponse(res, responseMessage)
         }

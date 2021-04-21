@@ -5,11 +5,12 @@ const path = require('path')
 const apiResponse = require('../helpers/apiResponse')
 const { processFileName } = require('../helpers/utilities')
 const StorageController = require('../controllers/storage')
+const { authorize } = require('../middlewares')
 global.XMLHttpRequest = require('xhr2')
 const multer  = require('multer')
 const upload = multer({dest:path.dirname(require.main.filename)+'/media'})
 
-router.post('/', upload.array('images'), async (req, res) => {
+router.post('/', upload.array('images'), authorize(['Teacher']), async (req, res) => {
     try {
         console.log('new storage req')
         // console.log(req)

@@ -3,6 +3,7 @@ const router = Router()
 
 const AvatarController = require('../controllers/avatar')
 const apiResponse = require('../helpers/apiResponse')
+const { authorize } = require('../middlewares')
 
 router.get('/', async (req, res) => {
     try {

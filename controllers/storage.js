@@ -8,7 +8,10 @@ exports.uploadImagesToFireBaseStorage = async (imageFiles) => {
         const uploadTasks = imageFiles.map((file) => {
             // console.log(filesNamesArr[index])
             const fileBlob = fs.readFileSync(file.path)
-            return storage.ref(`/uploadedImages/${file.name}`).put(fileBlob)
+            return storage.upload(file.path, {
+                destination: `/uploadedImages/${file.name}`
+            })
+            // return storage.ref(`/uploadedImages/${file.name}`).put(fileBlob)
         })    
     
         let uploadedImagesData = []
