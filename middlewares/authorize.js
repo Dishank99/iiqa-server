@@ -8,20 +8,15 @@ const authorize = (roles = []) => {
 
     async function authorizeMiddleWare(req, res, next){
         try {
-            const { token } = req.user
-            try {
-                var { uid } = await auth.verifyIdToken(token)
-            } catch (err) {
-                return apiResponse.notFoundErrorResponse(res, 'Please provide valid token for authentication')
-            }
+            const { uid } = req.user
             if (!uid){
-                return apiResponse.notFoundErrorResponse(res, 'User not found')
+                return apiResponse.notFoundErrorResponse(res, 'User was not authenticated.')
             }
             const userData = await getOnlyUserProfileFromAuthUID(uid)
             console.log(userData)
             const isAnyRoleSatified = roles.some(role => userData[role])
             if (isAnyRoleSatified) {
-                req.user = {...res.user, ...userData}
+                req.user = {...req.user, ...userData}
                 return next()
             }
             return apiResponse.notAuthorizedResponse(res)
