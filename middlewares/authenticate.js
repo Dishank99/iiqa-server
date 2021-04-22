@@ -16,6 +16,7 @@ const authenticate = async (req, res, next) => {
         }
         return apiResponse.incompleteRequestBodyResponse(res, 'Please provide token for authentication')
     } catch (err) {
+        console.log(err)
         return apiResponse.notFoundErrorResponse(res, 'User not found')
     }
 }
