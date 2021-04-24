@@ -167,7 +167,7 @@ router.post('/quizzes', authorize(['Teacher', 'Student']), async (req, res) => {
     const { generate } = req.query
     const { imageLinksArray, classroomDocId, quizData, quizName } = req.body
 
-    const userWantsToGeneratedQuiz = generate && imageLinksArray && !(classroomDocId && quizData)
+    const userWantsToGenerateQuiz = generate && imageLinksArray && !(classroomDocId && quizData)
     const userWantsToUploadQuiz = classroomDocId && quizData && !(generate && imageLinksArray)
 
     try {
@@ -175,7 +175,7 @@ router.post('/quizzes', authorize(['Teacher', 'Student']), async (req, res) => {
         let response = null
         if (generate && !imageLinksArray) {
             return apiResponse.incompleteRequestBodyResponse(res, 'Provide either "generate" param and imageLinksArray or classroomDocId and QuizData')
-        } else if( userWantsToGeneratedQuiz ) {
+        } else if( userWantsToGenerateQuiz ) {
             response = await ClassroomController.dummy(imageLinksArray)
         } else if ( userWantsToUploadQuiz ) {
             const isTheUserTeacherOfClassroom = await ClassroomController.isTheUserTeacherOfClassroom(req.user, classroomDocId)

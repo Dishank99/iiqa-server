@@ -2,20 +2,15 @@
 const express = require('express')
 const app = express()
 const cors = require('cors')
-const fileUpload = require('express-fileupload')
-const { authenticate } = require('./middlewares')
+const cookieParser = require('cookie-parser')
 
 const routes = require('./routes')
 
 //middlewares
-// app.use(fileUpload({
-//     useTempFiles: true,
-//     tempFileDir: './media/'
-// }))
-app.use(cors())
+app.use(cors({credentials:true, origin:'http://localhost:3000'}))
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
-app.use(authenticate)
+app.use(cookieParser())
 
 //routes
 app.use(routes)

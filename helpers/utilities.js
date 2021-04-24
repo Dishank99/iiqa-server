@@ -31,3 +31,13 @@ exports.deleteFileAfterUpload = (fileList) => {
   }))
   return Promise.all(deleteTask)
 }
+
+exports.parseCookies = (unParsedCookies) => {
+  const unParsedCookiesArr = unParsedCookies.split(';')
+  let parsedCookies = {}
+  unParsedCookiesArr.forEach(cookie => {
+    const [ cookieKey, cookieValue ] = cookie.split('=')
+    parsedCookies[cookieKey] = cookieValue
+  });
+  return parsedCookies
+}

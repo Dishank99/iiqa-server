@@ -3,16 +3,19 @@ const router = express.Router()
 
 const UserController = require('../controllers/user')
 const apiResponse = require('../helpers/apiResponse')
+const { authorize } = require('../middlewares')
 
-router.get('/', async (req, res) => {
-    const { userDocId, userAuthId } = req.query
+router.get('/', authorize(['Student', 'Teacher']), async (req, res) => {
+    const { userDocId, userAuthId, current } = req.query
 
     try {
         let userData = null
-        if(userDocId && !userAuthId) {
+        if(userDocId && !(userAuthId || current)) {
             userData = await UserController.getProfileDataFromDocId(userDocId)
-        } else if(userAuthId && !userDocId) {
+        } else if(userAuthId && !(userDocId || current)) {
             userData = await UserController.getOnlyUserProfileFromAuthUID(userAuthId)            
+        } else if(current && !(userDocId || userAuthId)) {
+            userData = req.user
         } else {
             return apiResponse.incompleteRequestBodyResponse(res, 'Either userAuthId or userDocId')
         }

@@ -1,14 +1,16 @@
 const {auth} = require('../configs/firebase')
 const apiResponse = require('../helpers/apiResponse')
+const { parseCookies } = require('../helpers/utilities')
 
 // middlewares have next parameter which points to the next middleware 
 const authenticate = async (req, res, next) => {
     try {
-        console.log(req.headers.authorization)
-        if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')){
-            const token = req.headers.authorization.split(' ')[1]
+        if(req.headers.cookie){
+            const { token } = parseCookies(req.headers.cookie)
             if(token){
-                const { uid } = await auth.verifyIdToken(token)
+                const decodedToken = await auth.verifyIdToken(token)
+                console.log(decodedToken)
+                const { uid } = decodedToken
                 req.user = { token, uid }
                 // console.log('authenticated', token)
                 return next()
