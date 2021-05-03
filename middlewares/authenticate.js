@@ -5,16 +5,14 @@ const { parseCookies } = require('../helpers/utilities')
 // middlewares have next parameter which points to the next middleware 
 const authenticate = async (req, res, next) => {
     try {
-        if(req.headers.cookie){
-            const { token } = parseCookies(req.headers.cookie)
-            if(token){
-                const decodedToken = await auth.verifyIdToken(token)
-                console.log(decodedToken)
-                const { uid } = decodedToken
-                req.user = { token, uid }
-                // console.log('authenticated', token)
-                return next()
-            }
+        console.log(req.cookies)
+        if(req.cookies.session){
+            const decodedClaims = await auth.verifySessionCookie(req.cookies.session, true)
+            console.log(decodedClaims)
+            const {uid} = decodedClaims
+            req.user = {uid}
+            console.log('requser', req.user)
+            return next()
         }
         return apiResponse.incompleteRequestBodyResponse(res, 'Please provide token for authentication')
     } catch (err) {

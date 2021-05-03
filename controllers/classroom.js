@@ -20,10 +20,10 @@ const getClassroomsForStudent = async function (userId){
             return []
         }
         listOfClassrooms.forEach(classroom => {
-            console.log(classroom.data())
+            // console.log(classroom.data())
             responseData = [...responseData, {docId: classroom.id, ...classroom.data()}]
         })
-        console.log(responseData)
+        // console.log(responseData)
         return responseData
     } catch (err) {
         throw err
